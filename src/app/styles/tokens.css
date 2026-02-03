@@ -1,0 +1,63 @@
+/* SWITZER LOCAL FONT SETUP */
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/Switzer-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/Switzer-Medium.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/Switzer-Semibold.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Switzer";
+  src: url("/fonts/Switzer-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* DESIGN SYSTEM */
+  --primary-color: rgb(0, 0, 0);
+  --secondary-color: rgba(0, 0, 0, 0.4) /* Cell Condition STATUS */
+    --color-healthy: #add68b;
+  --color-unhealthy: #fcc777;
+
+  --light-background-color: rgb(255, 255, 255);
+  --dark-background-color: rgb(0, 0, 0);
+
+  --font-family-base: "Switzer", sans-serif;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --dark-text-color: rgb(0, 0, 0);
+  --light-text-color: rgb(255, 255, 255);
+
+  --header-font-size: 16px;
+  --main-content-font-size: 24px;
+  --category-font-size: 12px;
+  --file-name-font-size: 11px;
+
+  --font-size-title: 34px;
+  --font-size-description: 18px;
+  --font-size-card-title: 36px;
+
+  --box-shadow: 1px 1px 4px 0 rgba(0, 0, 0, 0.05);
+}

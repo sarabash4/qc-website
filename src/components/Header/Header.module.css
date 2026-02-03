@@ -1,0 +1,29 @@
+.siteHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 12px 15px;
+  background: #fff;
+
+  font-family: var(--font-family-base);
+  color: black;
+}
+
+/* LEFT */
+
+/* RIGHT — NAV (MATCHES TIME) */
+.headerRight {
+  display: flex;
+  gap: 150px;
+  font-size: var(--header-font-size);
+  transform: none;
+}
+
+.headerRight a:hover {
+  opacity: 1;
+}

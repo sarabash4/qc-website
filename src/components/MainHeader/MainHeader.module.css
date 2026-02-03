@@ -1,0 +1,22 @@
+.mainHeader {
+  max-width: 720px;
+
+  font-family: var(--font-family-base);
+  font-size: var(--main-content-font-size); /* 24px */
+  font-weight: 500;
+  line-height: 1.35;
+
+  margin: 0;
+  padding: 0;
+
+  text-align: left;
+}
+
+/* MODES */
+.light {
+  color: var(--dark-text-color);
+}
+
+.dark {
+  color: var(--light-text-color);
+}
