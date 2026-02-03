@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./Header.module.css";
 
 function getKosovoTime() {
@@ -30,9 +31,9 @@ export default function Header() {
       <div className={styles.headerRight}>
         <div>{time} XK</div>
 
-        <a href="/information">Information</a>
-        <a href="/playground">Playground</a>
-        <a href="/contact">Contact</a>
+        <Link href="/information">Information</Link>
+        <Link href="/playground">Playground</Link>
+        <Link href="/contact">Contact</Link>
       </div>
     </header>
   );

@@ -34,9 +34,7 @@
 :root {
   /* DESIGN SYSTEM */
   --primary-color: rgb(0, 0, 0);
-  --secondary-color: rgba(0, 0, 0, 0.4) /* Cell Condition STATUS */
-    --color-healthy: #add68b;
-  --color-unhealthy: #fcc777;
+  --secondary-color: rgba(0, 0, 0, 0.4);
 
   --light-background-color: rgb(255, 255, 255);
   --dark-background-color: rgb(0, 0, 0);
