@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+
+import { useInView } from "@/src/hooks/useInView";
 
 export type GalleryItem = {
   id: string;
@@ -14,8 +17,8 @@ function isVideoSrc(src: string): boolean {
   return /\.(mp4|webm|mov)(\?|$)/i.test(src);
 }
 
-/** Gallery items from public/videos and public/images/qbicle. */
-const DEFAULT_ITEMS: GalleryItem[] = [
+/** Section 1: 3D work – 3 videos from public/videos. */
+const SECTION_1_VIDEOS: GalleryItem[] = [
   {
     id: "v-deftones",
     label: "deftones_story.mp4",
@@ -34,6 +37,15 @@ const DEFAULT_ITEMS: GalleryItem[] = [
     src: "/videos/aphex_story.mp4",
     aspectRatio: 6 / 19,
   },
+];
+
+/** Section 2: Qbicle – images from public/images/qbicle. */
+const SECTION_2_QBICLE_IMAGES: GalleryItem[] = [
+  {
+    id: "qb-4",
+    label: "qbicle 4",
+    src: "/images/qbicle/e88ecd164700707.63fb7be12e07e.jpg",
+  },
   {
     id: "qb-1",
     label: "qbicle 1",
@@ -50,9 +62,9 @@ const DEFAULT_ITEMS: GalleryItem[] = [
     src: "/images/qbicle/b78afe164700707.63fb7be12afd1.jpg",
   },
   {
-    id: "qb-4",
-    label: "qbicle 4",
-    src: "/images/qbicle/e88ecd164700707.63fb7be12e07e.jpg",
+    id: "qb-7",
+    label: "qbicle 7",
+    src: "/images/qbicle/b1f91b164700707.63fb7be12f267.jpg",
   },
   {
     id: "qb-5",
@@ -64,43 +76,101 @@ const DEFAULT_ITEMS: GalleryItem[] = [
     label: "qbicle 6",
     src: "/images/qbicle/c58d35164700707.63fb7be132398.jpg",
   },
-  {
-    id: "qb-7",
-    label: "qbicle 7",
-    src: "/images/qbicle/b1f91b164700707.63fb7be12f267.jpg",
-  },
 ];
 
-const VOTRA_DESCRIPTION =
-  "Collaborating on a visual identity for an experimental health-tech brand, focusing on technology, wellness, human emotion, refined sensitivity, and future-forward aesthetics. Objectives include creating a logo system, art direction, and immersive visuals.";
+const SECTION_1_DESCRIPTION =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.";
+
+const SECTION_2_DESCRIPTION =
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.";
 
 type GridView = "2" | "3" | "4";
 
-function ProjectBlock({ item }: { item: GalleryItem }) {
+function usePrefersReducedMotion(): boolean {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(mediaQuery.matches);
+
+    update();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", update);
+      return () => mediaQuery.removeEventListener("change", update);
+    }
+
+    // Safari fallback
+    mediaQuery.addListener(update);
+    return () => mediaQuery.removeListener(update);
+  }, []);
+
+  return reducedMotion;
+}
+
+function ProjectBlock({
+  item,
+  reducedMotion,
+}: {
+  item: GalleryItem;
+  reducedMotion: boolean;
+}) {
   const mediaSrc = item.src;
   const isVideo = mediaSrc ? isVideoSrc(mediaSrc) : false;
+
+  const { ref, inView, hasEntered } = useInView({
+    rootMargin: "600px 0px",
+    threshold: 0.01,
+  });
+
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (!isVideo) return;
+    if (!hasEntered) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (reducedMotion) {
+      video.pause();
+      return;
+    }
+
+    if (inView) {
+      void video.play().catch(() => {
+        // Autoplay can be blocked by browser policy; we fail silently.
+      });
+    } else {
+      video.pause();
+    }
+  }, [hasEntered, inView, isVideo, reducedMotion]);
 
   return (
     <article className="flex flex-col">
       <div
-        className="w-full overflow-hidden max-h-[600px]"
+        ref={ref}
+        className="w-full overflow-hidden max-h-[300px] bg-neutral-100"
         role={isVideo ? "application" : "img"}
         aria-label={item.label}
       >
         {mediaSrc && isVideo ? (
           <video
-            src={mediaSrc}
-            className="block w-full h-auto max-h-[600px] object-contain bg-black"
+            ref={videoRef}
+            src={hasEntered ? mediaSrc : undefined}
+            className="block w-full h-auto max-h-[300px] object-contain bg-black"
             muted
             loop
             playsInline
-            autoPlay
+            preload="none"
           />
         ) : mediaSrc ? (
           <img
             src={mediaSrc}
             alt={item.label}
-            className="block w-full h-auto max-h-[600px] object-contain"
+            loading="lazy"
+            decoding="async"
+            className="block w-full h-auto max-h-[300px] object-contain"
           />
         ) : (
           <div className="flex aspect-square w-full items-center justify-center bg-gray-100 text-gray-500">
@@ -120,16 +190,11 @@ function ProjectBlock({ item }: { item: GalleryItem }) {
   );
 }
 
-type PortfolioGalleryProps = {
-  items?: GalleryItem[];
-};
-
-export default function PortfolioGallery(props?: PortfolioGalleryProps) {
-  const { items: itemsProp } = props ?? {};
+export default function PortfolioGallery() {
   const [view, setView] = useState<GridView>("2");
-  const [expanded, setExpanded] = useState(false);
-
-  const items = itemsProp ?? DEFAULT_ITEMS;
+  const [expanded1, setExpanded1] = useState(false);
+  const [expanded2, setExpanded2] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
 
   const gridClass =
     view === "2"
@@ -143,134 +208,165 @@ export default function PortfolioGallery(props?: PortfolioGalleryProps) {
       className="w-full bg-white"
       style={{ fontFamily: "var(--font-family-base)" }}
     >
-      {/* Title row: "Votra" bold, "Identity, 2025" lighter grey, + / collapse icon */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white pb-4 sm:pb-6 lg:pb-8">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-black sm:text-base lg:text-base">
-            Votra,
-          </span>
-          <span className="text-sm font-normal text-gray-600 sm:text-base lg:text-base">
-            Identity, 2025
-          </span>
-          <button
-            type="button"
-            aria-label={expanded ? "Collapse" : "Expand"}
-            onClick={() => setExpanded(!expanded)}
-            className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded border border-black text-black hover:opacity-70"
-          >
-            {expanded ? (
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden
-              >
-                <line x1="2" y1="6" x2="10" y2="6" />
-              </svg>
-            ) : (
-              <span className="text-lg leading-none">+</span>
-            )}
-          </button>
-        </div>
-        {!expanded && (
-          <div className="flex items-center gap-1">
+      {/* Section 1: 3D – title, expand, grid toggles, 3 videos */}
+      <div>
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white pb-4 sm:pb-6 lg:pb-8">
+          <div className="flex items-center gap-2">
+            <span className="text-[16px] font-bold text-black">3D</span>
             <button
               type="button"
-              aria-label="2 column grid"
-              onClick={() => setView("2")}
-              className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
-                view === "2"
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-              }`}
+              aria-label={expanded1 ? "Collapse" : "Expand"}
+              onClick={(e) => {
+                e.preventDefault();
+                setExpanded1((prev) => !prev);
+              }}
+              className="flex h-8 w-8 min-h-8 min-w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded text-black transition-colors hover:bg-black/5 active:bg-black/10 [&_img]:hover:opacity-80 [&_img]:active:opacity-90"
             >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="currentColor"
+              <Image
+                src={expanded1 ? "/icons/minus.svg" : "/icons/plus.svg"}
+                alt=""
+                width={16}
+                height={16}
+                className="w-4 h-4 select-none object-contain pointer-events-none"
                 aria-hidden
-              >
-                <rect x="1" y="1" width="5" height="12" rx="0.5" />
-                <rect x="8" y="1" width="5" height="12" rx="0.5" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              aria-label="3 column grid"
-              onClick={() => setView("3")}
-              className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                view === "3"
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-              }`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="currentColor"
-                aria-hidden
-              >
-                <rect x="1" y="1" width="3" height="12" rx="0.5" />
-                <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
-                <rect x="10" y="1" width="3" height="12" rx="0.5" />
-              </svg>
-            </button>
-            <button
-              type="button"
-              aria-label="4 column grid"
-              onClick={() => setView("4")}
-              className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                view === "4"
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-              }`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="currentColor"
-                aria-hidden
-              >
-                <rect x="1" y="1" width="5" height="5" rx="0.5" />
-                <rect x="8" y="1" width="5" height="5" rx="0.5" />
-                <rect x="1" y="8" width="5" height="5" rx="0.5" />
-                <rect x="8" y="8" width="5" height="5" rx="0.5" />
-              </svg>
+              />
             </button>
           </div>
-        )}
-      </div>
+          {!expanded1 && (
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                aria-label="2 column grid"
+                onClick={() => setView("2")}
+                className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
+                  view === "2"
+                    ? "bg-black text-white"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
+                }`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <rect x="1" y="1" width="5" height="12" rx="0.5" />
+                  <rect x="8" y="1" width="5" height="12" rx="0.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                aria-label="3 column grid"
+                onClick={() => setView("3")}
+                className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
+                  view === "3"
+                    ? "bg-black text-white"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
+                }`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <rect x="1" y="1" width="3" height="12" rx="0.5" />
+                  <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
+                  <rect x="10" y="1" width="3" height="12" rx="0.5" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                aria-label="4 column grid"
+                onClick={() => setView("4")}
+                className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
+                  view === "4"
+                    ? "bg-black text-white"
+                    : "bg-gray-200 text-black hover:bg-gray-300"
+                }`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 14 14"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <rect x="1" y="1" width="5" height="5" rx="0.5" />
+                  <rect x="8" y="1" width="5" height="5" rx="0.5" />
+                  <rect x="1" y="8" width="5" height="5" rx="0.5" />
+                  <rect x="8" y="8" width="5" height="5" rx="0.5" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
 
-      {/* Grid area: description overlays on top when expanded, with smooth transition */}
-      <div className="relative">
-        {/* Overlay: full width, content height, white bg, smooth transition */}
         <div
-          className={`absolute top-0 left-0 right-0 z-10 w-full bg-white transition-all duration-300 ease-out ${
-            expanded
-              ? "pointer-events-auto opacity-100"
-              : "pointer-events-none opacity-0"
+          className={`overflow-hidden transition-all duration-300 ease-out ${
+            expanded1 ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
           }`}
-          aria-hidden={!expanded}
+          aria-hidden={!expanded1}
         >
-          <p
-            className={`max-w-[720px] py-4 text-left text-sm leading-relaxed text-black transition-all duration-300 ease-out sm:text-base ${
-              expanded ? "translate-y-0" : "-translate-y-2"
-            }`}
-          >
-            {VOTRA_DESCRIPTION}
+          <p className="max-w-[720px] pb-4 text-left text-[16px] tracking-[-0.02em] leading-[120%] text-black">
+            {SECTION_1_DESCRIPTION}
           </p>
         </div>
 
-        {/* Responsive grid: 2, 3, or 4 columns; gap between items; media max height 600px, aspect ratio preserved. */}
         <div className={`${gridClass} pt-4 grid-auto-rows-auto`}>
-          {items.map((item) => (
-            <ProjectBlock key={item.id} item={item} />
+          {SECTION_1_VIDEOS.map((item) => (
+            <ProjectBlock
+              key={item.id}
+              item={item}
+              reducedMotion={reducedMotion}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Section 2: Qbicle Brand Identity and UI/UX – title + icon, description overlay, qbicle images */}
+      <div className="pt-8 sm:pt-10 lg:pt-12">
+        <div className="flex flex-wrap items-center gap-3 bg-white pb-4 sm:pb-6 lg:pb-6">
+          <h2 className="text-[16px] font-bold text-black">
+            Qbicle Brand Identity and UI/UX
+          </h2>
+          <button
+            type="button"
+            aria-label={expanded2 ? "Collapse" : "Expand"}
+            onClick={() => setExpanded2(!expanded2)}
+            className="flex h-4 w-4 flex-shrink-0 items-center justify-center text-black hover:opacity-70 cursor-pointer"
+          >
+            <Image
+              src={expanded2 ? "/icons/minus.svg" : "/icons/plus.svg"}
+              alt=""
+              width={16}
+              height={16}
+              className="w-4 h-4 object-contain transition-opacity duration-200 ease-out"
+              aria-hidden
+            />
+          </button>
+        </div>
+
+        <div
+          className={`overflow-hidden transition-all duration-300 ease-out ${
+            expanded2 ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+          }`}
+          aria-hidden={!expanded2}
+        >
+          <p className="max-w-[720px] pb-4 text-left text-[16px] tracking-[-0.02em] leading-[120%] text-black">
+            {SECTION_2_DESCRIPTION}
+          </p>
+        </div>
+
+        <div className={`${gridClass} grid-auto-rows-auto pt-4`}>
+          {SECTION_2_QBICLE_IMAGES.map((item) => (
+            <ProjectBlock
+              key={item.id}
+              item={item}
+              reducedMotion={reducedMotion}
+            />
           ))}
         </div>
       </div>
