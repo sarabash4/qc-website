@@ -1,17 +1,12 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-
-/** Base height for one row unit (rowSpan 1). Row height = base × max(rowSpan in row). */
-const BASE_ROW_HEIGHT_PX = 200;
+import { useState } from "react";
 
 export type GalleryItem = {
   id: string;
   label: string;
   showTm?: boolean;
-  /** Image or video URL. Aspect ratio is measured on load and drives grid layout. */
   src?: string;
-  /** Optional pre-set aspect ratio (width/height). Used until the media loads and overwrites it. */
   aspectRatio?: number;
 };
 
@@ -76,163 +71,39 @@ const DEFAULT_ITEMS: GalleryItem[] = [
   },
 ];
 
-/** Derive colSpan/rowSpan from aspect ratio (width/height). Wide = more cols, tall = more rows. */
-function spanFromAspectRatio(aspectRatio: number): {
-  colSpan: number;
-  rowSpan: number;
-} {
-  const colSpan = aspectRatio >= 1.3 ? 2 : 1;
-  const rowSpan = aspectRatio <= 0.75 ? 2 : 1;
-  return { colSpan, rowSpan };
-}
-
-/** Pack items left-to-right; row height = tallest item in that row. Uses aspect ratios to derive spans. */
-function computeGridLayout(
-  columns: number,
-  items: GalleryItem[],
-  aspectRatios: Record<string, number>,
-): {
-  gridTemplateRows: string;
-  placements: { gridRow: string; gridColumn: string }[];
-} {
-  const rows: {
-    height: number;
-    items: { index: number; col: number; colSpan: number; rowSpan: number }[];
-  }[] = [];
-  let currentRow = {
-    height: 1,
-    usedCols: 0,
-    items: [] as {
-      index: number;
-      col: number;
-      colSpan: number;
-      rowSpan: number;
-    }[],
-  };
-
-  items.forEach((item, index) => {
-    const ratio = aspectRatios[item.id] ?? item.aspectRatio ?? 1;
-    const { colSpan: rawColSpan, rowSpan } = spanFromAspectRatio(ratio);
-    const colSpan = Math.min(rawColSpan, columns);
-    if (currentRow.usedCols + colSpan > columns) {
-      rows.push(currentRow);
-      currentRow = { height: 1, usedCols: 0, items: [] };
-    }
-    currentRow.items.push({
-      index,
-      col: currentRow.usedCols,
-      colSpan,
-      rowSpan,
-    });
-    currentRow.usedCols += colSpan;
-    currentRow.height = Math.max(currentRow.height, rowSpan);
-  });
-  rows.push(currentRow);
-
-  const gridRowHeights: string[] = [];
-  rows.forEach((r) => {
-    for (let i = 0; i < r.height; i++) {
-      gridRowHeights.push(`${BASE_ROW_HEIGHT_PX}px`);
-    }
-  });
-
-  const placements: { gridRow: string; gridColumn: string }[] = [];
-  let gridRowStart = 1;
-  rows.forEach((r) => {
-    r.items.forEach(({ index, col, colSpan, rowSpan: itemRowSpan }) => {
-      placements[index] = {
-        gridRow:
-          itemRowSpan > 1
-            ? `${gridRowStart} / span ${itemRowSpan}`
-            : `${gridRowStart}`,
-        gridColumn: colSpan > 1 ? `${col + 1} / span ${colSpan}` : `${col + 1}`,
-      };
-    });
-    gridRowStart += r.height;
-  });
-
-  return {
-    gridTemplateRows: gridRowHeights.join(" "),
-    placements,
-  };
-}
-
 const VOTRA_DESCRIPTION =
   "Collaborating on a visual identity for an experimental health-tech brand, focusing on technology, wellness, human emotion, refined sensitivity, and future-forward aesthetics. Objectives include creating a logo system, art direction, and immersive visuals.";
 
-type GridCols = "1" | "2" | "3" | "4";
+type GridView = "2" | "3" | "4";
 
-const COLUMN_COUNT: Record<GridCols, number> = {
-  "1": 1,
-  "2": 2,
-  "3": 3,
-  "4": 4,
-};
-
-function ProjectBlock({
-  item,
-  placement,
-  onAspectRatio,
-  compact,
-}: {
-  item: GalleryItem;
-  placement: { gridRow: string; gridColumn: string };
-  onAspectRatio?: (id: string, width: number, height: number) => void;
-  compact?: boolean;
-}) {
-  const handleImageLoad = useCallback(
-    (e: React.SyntheticEvent<HTMLImageElement>) => {
-      const img = e.currentTarget;
-      if (img.naturalWidth && img.naturalHeight) {
-        onAspectRatio?.(item.id, img.naturalWidth, img.naturalHeight);
-      }
-    },
-    [item.id, onAspectRatio],
-  );
-
-  const handleVideoLoadedMetadata = useCallback(
-    (e: React.SyntheticEvent<HTMLVideoElement>) => {
-      const video = e.currentTarget;
-      if (video.videoWidth && video.videoHeight) {
-        onAspectRatio?.(item.id, video.videoWidth, video.videoHeight);
-      }
-    },
-    [item.id, onAspectRatio],
-  );
-
+function ProjectBlock({ item }: { item: GalleryItem }) {
   const mediaSrc = item.src;
   const isVideo = mediaSrc ? isVideoSrc(mediaSrc) : false;
 
   return (
-    <article className="flex flex-col min-h-0 h-full" style={placement}>
+    <article className="flex flex-col">
       <div
-        className={
-          compact
-            ? "aspect-square w-full overflow-hidden "
-            : "min-h-0 flex-1 w-full overflow-hidden "
-        }
+        className="w-full overflow-hidden max-h-[600px]"
         role={isVideo ? "application" : "img"}
         aria-label={item.label}
       >
         {mediaSrc && isVideo ? (
           <video
             src={mediaSrc}
-            className="h-full w-full object-contain bg-black"
+            className="block w-full h-auto max-h-[600px] object-contain bg-black"
             muted
             loop
             playsInline
             autoPlay
-            onLoadedMetadata={handleVideoLoadedMetadata}
           />
         ) : mediaSrc ? (
           <img
             src={mediaSrc}
             alt={item.label}
-            className="h-full w-full object-cover"
-            onLoad={handleImageLoad}
+            className="block w-full h-auto max-h-[600px] object-contain"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-500">
+          <div className="flex aspect-square w-full items-center justify-center bg-gray-100 text-gray-500">
             <span className="flex items-baseline gap-0.5 text-3xl font-medium sm:text-4xl">
               V
               {item.showTm && (
@@ -255,38 +126,17 @@ type PortfolioGalleryProps = {
 
 export default function PortfolioGallery(props?: PortfolioGalleryProps) {
   const { items: itemsProp } = props ?? {};
-  const [view, setView] = useState<GridCols>("2");
+  const [view, setView] = useState<GridView>("2");
   const [expanded, setExpanded] = useState(false);
-  const [aspectRatios, setAspectRatios] = useState<Record<string, number>>({});
 
   const items = itemsProp ?? DEFAULT_ITEMS;
-  const columns = COLUMN_COUNT[view];
-  const layout = useMemo(
-    () => computeGridLayout(columns, items, aspectRatios),
-    [columns, items, aspectRatios],
-  );
-
-  const handleAspectRatio = useCallback(
-    (id: string, width: number, height: number) => {
-      const ratio = width / height;
-      setAspectRatios((prev) =>
-        prev[id] === ratio ? prev : { ...prev, [id]: ratio },
-      );
-    },
-    [],
-  );
 
   const gridClass =
-    view === "1"
-      ? "grid grid-cols-1 gap-[15px]"
-      : view === "2"
-        ? "grid grid-cols-2 gap-[15px]"
-        : view === "3"
-          ? "grid grid-cols-3 gap-[15px]"
-          : "grid grid-cols-4 gap-[15px]";
-  const gridStyle = {
-    gridTemplateRows: layout.gridTemplateRows,
-  };
+    view === "2"
+      ? "grid grid-cols-2 gap-6"
+      : view === "3"
+        ? "grid grid-cols-3 gap-6"
+        : "grid grid-cols-4 gap-6";
 
   return (
     <section
@@ -327,27 +177,6 @@ export default function PortfolioGallery(props?: PortfolioGalleryProps) {
         </div>
         {!expanded && (
           <div className="flex items-center gap-1">
-            {/* Mobile: 1-grid and 2-grid only */}
-            <button
-              type="button"
-              aria-label="1 column grid"
-              onClick={() => setView("1")}
-              className={`flex h-8 w-8 items-center justify-center rounded transition-colors lg:hidden ${
-                view === "1"
-                  ? "bg-black text-white"
-                  : "bg-gray-200 text-black hover:bg-gray-300"
-              }`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="currentColor"
-                aria-hidden
-              >
-                <rect x="1" y="1" width="12" height="12" rx="0.5" />
-              </svg>
-            </button>
             <button
               type="button"
               aria-label="2 column grid"
@@ -369,7 +198,6 @@ export default function PortfolioGallery(props?: PortfolioGalleryProps) {
                 <rect x="8" y="1" width="5" height="12" rx="0.5" />
               </svg>
             </button>
-            {/* Laptop: 3-grid and 4-grid (2-grid shown above) */}
             <button
               type="button"
               aria-label="3 column grid"
@@ -439,17 +267,10 @@ export default function PortfolioGallery(props?: PortfolioGalleryProps) {
           </p>
         </div>
 
-        {/* Full grid: row height = tallest item in row; items wrap when they don't fit. Layout is driven by image aspect ratios. */}
-        <div className={`${gridClass} pt-4`} style={gridStyle}>
-          {items.map((item, i) => (
-            <ProjectBlock
-              key={item.id}
-              item={item}
-              placement={
-                layout.placements[i] ?? { gridRow: "1", gridColumn: "1" }
-              }
-              onAspectRatio={handleAspectRatio}
-            />
+        {/* Responsive grid: 2, 3, or 4 columns; gap between items; media max height 600px, aspect ratio preserved. */}
+        <div className={`${gridClass} pt-4 grid-auto-rows-auto`}>
+          {items.map((item) => (
+            <ProjectBlock key={item.id} item={item} />
           ))}
         </div>
       </div>
