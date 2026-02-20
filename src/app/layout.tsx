@@ -50,10 +50,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${switzer.variable} ${switzer.variable} `}
-        style={{ backgroundColor: "var(--light-background-color)" }}
+        className={`${switzer.variable} min-h-screen bg-white text-black antialiased`}
       >
-        <Header></Header>
+        <Header />
         {children}
       </body>
     </html>
