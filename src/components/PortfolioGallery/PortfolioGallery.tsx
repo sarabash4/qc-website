@@ -191,7 +191,7 @@ function ProjectBlock({
 }
 
 export default function PortfolioGallery() {
-  const [view, setView] = useState<GridView>("3 ");
+  const [view, setView] = useState<GridView>("3");
   const [expanded1, setExpanded1] = useState(false);
   const [expanded2, setExpanded2] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
