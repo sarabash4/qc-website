@@ -30,8 +30,8 @@ const DEFAULT_IMAGES = [
 // -----------------------------
 const MAX_ITEMS = 18;
 
-const IMAGE_W = 250;
-const IMAGE_H = 300;
+const IMAGE_W = 150;
+const IMAGE_H = 200;
 
 // Spacing is computed from image size so it stays visually cohesive if you change IMAGE_W/H.
 // Desired gap between images (edge-to-edge, approximately).
@@ -50,7 +50,7 @@ const FOLLOW_HZ = 26;
 const MICRO_MOVE_PX = 0.35;
 
 // Lifetime controls the ribbon length / persistence.
-const LIFETIME_MS = 920;
+const LIFETIME_MS = 980;
 
 // Visual styling tweaks.
 const ROTATE_RANDOM_DEG = 2.25;
@@ -65,7 +65,7 @@ const SPEED_BREATH_SCALE = 0.035;
 // Spawn (materialize) animation: cinematic unfold + soft fade-in.
 // Computed inside RAF (no CSS transitions) and multiplies with end-of-life fade-out.
 const SPAWN_DURATION_MS = 240;
-const SPAWN_SCALE_X_FROM = 0.2;
+const SPAWN_SCALE_FROM = 0.7;
 const SPAWN_OPACITY_MAX = 0.9;
 
 const BASE_Z_INDEX = 1000;
@@ -96,7 +96,8 @@ function easeInQuad(t: number) {
 }
 
 function smoothingAlpha(hz: number, dtSec: number) {
-  if (dtSec <= 0) return 1;
+  // If no time has passed (or dt is invalid), do not snap.
+  if (!(dtSec > 0) || !Number.isFinite(dtSec)) return 0;
   return 1 - Math.exp(-hz * dtSec);
 }
 
@@ -193,13 +194,17 @@ export default function CursorImageTrail() {
 
       if (!hasPointerRef.current) {
         hasPointerRef.current = true;
-        smoothRef.current.x = e.clientX;
         emitCarryRef.current = 0;
+        smoothRef.current.x = e.clientX;
         smoothRef.current.y = e.clientY;
         lastSmoothRef.current.x = e.clientX;
         lastSmoothRef.current.y = e.clientY;
         emitFromRef.current.x = e.clientX;
         emitFromRef.current.y = e.clientY;
+        velocityRef.current.x = 0;
+        velocityRef.current.y = 0;
+        // Warm-start RAF timing to avoid a big first dt-driven update.
+        lastNowRef.current = performance.now();
       }
     };
 
@@ -213,6 +218,9 @@ export default function CursorImageTrail() {
     if (!isDesktop) return;
 
     const segmentSpacingPx = spacingPxFromImageSize();
+    const VELOCITY_SMOOTH_HZ = 22;
+    const DT_SMOOTH_MAX = 1 / 30;
+    const DT_VELOCITY_MAX = 1 / 45;
 
     const spawnAt = (x: number, y: number, now: number) => {
       const next = (headRef.current + 1) % MAX_ITEMS;
@@ -246,14 +254,19 @@ export default function CursorImageTrail() {
 
       // Clamp huge deltas (tab switch) to avoid big jumps.
       dt = Math.min(dt, 0.05);
+      // If we don't have a meaningful dt yet, skip updates this frame to avoid snapping.
+      if (!(dt > 0)) {
+        rafRef.current = window.requestAnimationFrame(tick);
+        return;
+      }
 
       if (hasPointerRef.current) {
         const target = targetRef.current;
         const smooth = smoothRef.current;
 
-        const a = smoothingAlpha(POINTER_SMOOTH_HZ, dt);
+        const dtSmooth = Math.min(dt, DT_SMOOTH_MAX);
+        const a = smoothingAlpha(POINTER_SMOOTH_HZ, dtSmooth);
         smooth.x += (target.x - smooth.x) * a;
-          emitCarryRef.current = 0;
         smooth.y += (target.y - smooth.y) * a;
 
         // Ensure the trail appears immediately on first movement.
@@ -265,17 +278,18 @@ export default function CursorImageTrail() {
 
         if (dt > 0) {
           const ls = lastSmoothRef.current;
-          const vx = (smooth.x - ls.x) / dt;
-          const vy = (smooth.y - ls.y) / dt;
+          const dtVel = Math.min(dt, DT_VELOCITY_MAX);
+          const vx = (smooth.x - ls.x) / dtVel;
+          const vy = (smooth.y - ls.y) / dtVel;
           // Light velocity smoothing to avoid noisy direction flips.
-          const va = smoothingAlpha(22, dt);
+          const va = smoothingAlpha(VELOCITY_SMOOTH_HZ, dtSmooth);
           velocityRef.current.x += (vx - velocityRef.current.x) * va;
           velocityRef.current.y += (vy - velocityRef.current.y) * va;
           ls.x = smooth.x;
           ls.y = smooth.y;
         }
 
-          let carry = emitCarryRef.current;
+        let carry = emitCarryRef.current;
         // Distance-based emission along the smoothed cursor path.
         const from = emitFromRef.current;
         const dx0 = smooth.x - from.x;
@@ -297,8 +311,6 @@ export default function CursorImageTrail() {
             from.x += ux * segmentSpacingPx;
             from.y += uy * segmentSpacingPx;
 
-          emitCarryRef.current = carry + dist;
-
             spawnAt(from.x, from.y, now);
 
             dx = smooth.x - from.x;
@@ -307,12 +319,15 @@ export default function CursorImageTrail() {
 
             if (dist <= MICRO_MOVE_PX) break;
           }
+
+          // Carry the remainder so we don't burst on small initial moves.
+          emitCarryRef.current = carry + dist;
         }
       }
 
       // Cohesion pass: each older segment follows the segment ahead while
       // maintaining a target spacing (prevents spacing compression).
-      const followA = smoothingAlpha(FOLLOW_HZ, dt);
+      const followA = smoothingAlpha(FOLLOW_HZ, Math.min(dt, DT_SMOOTH_MAX));
       const head = headRef.current;
       if (head >= 0 && followA > 0) {
         for (let i = 1; i < MAX_ITEMS; i++) {
@@ -389,10 +404,11 @@ export default function CursorImageTrail() {
 
           el.style.opacity = opacity.toFixed(4);
           el.style.zIndex = String(BASE_Z_INDEX + (MAX_ITEMS - i));
-          const unfoldX = lerp(SPAWN_SCALE_X_FROM, 1, spawnEase);
-          const sx = scale * unfoldX;
-          const sy = scale;
-          el.style.transform = `translate3d(${seg.x}px, ${seg.y}px, 0) translate(-50%, -50%) rotate(${seg.rotationDeg}deg) scale3d(${sx}, ${sy}, 1)`;
+          const spawnScale = lerp(SPAWN_SCALE_FROM, 1, spawnEase);
+          const sx = scale * spawnScale;
+          const sy = scale * spawnScale;
+          const rot = seg.rotationDeg * spawnEase;
+          el.style.transform = `translate3d(${seg.x}px, ${seg.y}px, 0) translate(-50%, -50%) rotate(${rot}deg) scale3d(${sx}, ${sy}, 1)`;
         }
       }
 
