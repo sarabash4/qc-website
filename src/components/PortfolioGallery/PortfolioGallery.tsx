@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 import { useInView } from "@/src/hooks/useInView";
+import { ExpandableSection } from "@/src/components/PortfolioGallery/ExpandableSection";
 
 export type GalleryItem = {
   id: string;
@@ -191,7 +191,7 @@ function ProjectBlock({
 }
 
 export default function PortfolioGallery() {
-  const [view, setView] = useState<GridView>("2");
+  const [view, setView] = useState<GridView>("3 ");
   const [expanded1, setExpanded1] = useState(false);
   const [expanded2, setExpanded2] = useState(false);
   const reducedMotion = usePrefersReducedMotion();
@@ -210,165 +210,139 @@ export default function PortfolioGallery() {
     >
       {/* Section 1: 3D – title, expand, grid toggles, 3 videos */}
       <div>
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white pb-4 sm:pb-6 lg:pb-8">
-          <div className="flex items-center gap-2">
-            <span className="text-[16px] font-bold text-black">3D</span>
-            <button
-              type="button"
-              aria-label={expanded1 ? "Collapse" : "Expand"}
-              onClick={(e) => {
-                e.preventDefault();
-                setExpanded1((prev) => !prev);
-              }}
-              className="flex h-8 w-8 min-h-8 min-w-8 flex-shrink-0 cursor-pointer items-center justify-center rounded text-black transition-colors hover:bg-black/5 active:bg-black/10 [&_img]:hover:opacity-80 [&_img]:active:opacity-90"
+        <ExpandableSection
+          id="gallery-3d"
+          title={<span className="text-[16px] font-bold text-black">3D</span>}
+          description={SECTION_1_DESCRIPTION}
+          expanded={expanded1}
+          onToggle={() => setExpanded1((prev) => !prev)}
+          titleTag="div"
+          containerClassName=""
+          headerClassName="bg-white"
+          titleClassName=""
+          descriptionPanelClassName="bg-white"
+          renderHeader={({ titleNode, toggleButton }) => (
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 bg-white "
+              style={{ paddingBottom: "16px" }}
             >
-              <Image
-                src={expanded1 ? "/icons/minus.svg" : "/icons/plus.svg"}
-                alt=""
-                width={16}
-                height={16}
-                className="w-4 h-4 select-none object-contain pointer-events-none"
-                aria-hidden
-              />
-            </button>
-          </div>
-          {!expanded1 && (
-            <div className="flex items-center gap-1">
-              <button
-                type="button"
-                aria-label="2 column grid"
-                onClick={() => setView("2")}
-                className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
-                  view === "2"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="currentColor"
-                  aria-hidden
+              <div className="flex items-center gap-2">
+                {titleNode}
+                {toggleButton}
+              </div>
+
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  aria-label="2 column grid"
+                  onClick={() => setView("2")}
+                  className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
+                    view === "2"
+                      ? "bg-black text-white"
+                      : "bg-gray-200 text-black hover:bg-gray-300"
+                  }`}
                 >
-                  <rect x="1" y="1" width="5" height="12" rx="0.5" />
-                  <rect x="8" y="1" width="5" height="12" rx="0.5" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                aria-label="3 column grid"
-                onClick={() => setView("3")}
-                className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                  view === "3"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="currentColor"
-                  aria-hidden
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <rect x="1" y="1" width="5" height="12" rx="0.5" />
+                    <rect x="8" y="1" width="5" height="12" rx="0.5" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="3 column grid"
+                  onClick={() => setView("3")}
+                  className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
+                    view === "3"
+                      ? "bg-black text-white"
+                      : "bg-gray-200 text-black hover:bg-gray-300"
+                  }`}
                 >
-                  <rect x="1" y="1" width="3" height="12" rx="0.5" />
-                  <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
-                  <rect x="10" y="1" width="3" height="12" rx="0.5" />
-                </svg>
-              </button>
-              <button
-                type="button"
-                aria-label="4 column grid"
-                onClick={() => setView("4")}
-                className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                  view === "4"
-                    ? "bg-black text-white"
-                    : "bg-gray-200 text-black hover:bg-gray-300"
-                }`}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 14 14"
-                  fill="currentColor"
-                  aria-hidden
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <rect x="1" y="1" width="3" height="12" rx="0.5" />
+                    <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
+                    <rect x="10" y="1" width="3" height="12" rx="0.5" />
+                  </svg>
+                </button>
+
+                <button
+                  type="button"
+                  aria-label="4 column grid"
+                  onClick={() => setView("4")}
+                  className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
+                    view === "4"
+                      ? "bg-black text-white"
+                      : "bg-gray-200 text-black hover:bg-gray-300"
+                  }`}
                 >
-                  <rect x="1" y="1" width="5" height="5" rx="0.5" />
-                  <rect x="8" y="1" width="5" height="5" rx="0.5" />
-                  <rect x="1" y="8" width="5" height="5" rx="0.5" />
-                  <rect x="8" y="8" width="5" height="5" rx="0.5" />
-                </svg>
-              </button>
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="currentColor"
+                    aria-hidden
+                  >
+                    <rect x="1" y="1" width="5" height="5" rx="0.5" />
+                    <rect x="8" y="1" width="5" height="5" rx="0.5" />
+                    <rect x="1" y="8" width="5" height="5" rx="0.5" />
+                    <rect x="8" y="8" width="5" height="5" rx="0.5" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
-        </div>
-
-        <div
-          className={`overflow-hidden transition-all duration-300 ease-out ${
-            expanded1 ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-          aria-hidden={!expanded1}
         >
-          <p className="max-w-[720px] pb-4 text-left text-[16px] tracking-[-0.02em] leading-[120%] text-black">
-            {SECTION_1_DESCRIPTION}
-          </p>
-        </div>
-
-        <div className={`${gridClass} pt-4 grid-auto-rows-auto`}>
-          {SECTION_1_VIDEOS.map((item) => (
-            <ProjectBlock
-              key={item.id}
-              item={item}
-              reducedMotion={reducedMotion}
-            />
-          ))}
-        </div>
+          <div className={`${gridClass} pt-2 grid-auto-rows-auto`}>
+            {SECTION_1_VIDEOS.map((item) => (
+              <ProjectBlock
+                key={item.id}
+                item={item}
+                reducedMotion={reducedMotion}
+              />
+            ))}
+          </div>
+        </ExpandableSection>
       </div>
 
       {/* Section 2: Qbicle Brand Identity and UI/UX – title + icon, description overlay, qbicle images */}
-      <div className="pt-8 sm:pt-10 lg:pt-12">
-        <div className="flex flex-wrap items-center gap-3 bg-white pb-4 sm:pb-6 lg:pb-6">
-          <h2 className="text-[16px] font-bold text-black">
-            Qbicle Brand Identity and UI/UX
-          </h2>
-          <button
-            type="button"
-            aria-label={expanded2 ? "Collapse" : "Expand"}
-            onClick={() => setExpanded2(!expanded2)}
-            className="flex h-4 w-4 flex-shrink-0 items-center justify-center text-black hover:opacity-70 cursor-pointer"
-          >
-            <Image
-              src={expanded2 ? "/icons/minus.svg" : "/icons/plus.svg"}
-              alt=""
-              width={16}
-              height={16}
-              className="w-4 h-4 object-contain transition-opacity duration-200 ease-out"
-              aria-hidden
-            />
-          </button>
-        </div>
-
-        <div
-          className={`overflow-hidden transition-all duration-300 ease-out ${
-            expanded2 ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
-          }`}
-          aria-hidden={!expanded2}
+      <div className="pt-8 sm:pt-10 lg:pt-12" style={{ paddingTop: "16px" }}>
+        <ExpandableSection
+          id="gallery-qbicle"
+          title={
+            <span className="text-[16px] font-bold text-black">
+              Qbicle Brand Identity and UI/UX
+            </span>
+          }
+          description={SECTION_2_DESCRIPTION}
+          expanded={expanded2}
+          onToggle={() => setExpanded2((prev) => !prev)}
+          titleTag="div"
+          headerClassName="bg-white pb-1"
+          titleClassName=""
+          descriptionPanelClassName="bg-white"
         >
-          <p className="max-w-[720px] pb-4 text-left text-[16px] tracking-[-0.02em] leading-[120%] text-black">
-            {SECTION_2_DESCRIPTION}
-          </p>
-        </div>
-
-        <div className={`${gridClass} grid-auto-rows-auto pt-4`}>
-          {SECTION_2_QBICLE_IMAGES.map((item) => (
-            <ProjectBlock
-              key={item.id}
-              item={item}
-              reducedMotion={reducedMotion}
-            />
-          ))}
-        </div>
+          <div className={`${gridClass} grid-auto-rows-auto pt-2`}>
+            {SECTION_2_QBICLE_IMAGES.map((item) => (
+              <ProjectBlock
+                key={item.id}
+                item={item}
+                reducedMotion={reducedMotion}
+              />
+            ))}
+          </div>
+        </ExpandableSection>
       </div>
     </section>
   );
