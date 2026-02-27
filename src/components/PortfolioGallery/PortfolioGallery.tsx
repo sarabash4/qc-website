@@ -13,6 +13,18 @@ export type GalleryItem = {
   aspectRatio?: number;
 };
 
+export type GalleryMode = "sections" | "flat";
+export type GridView = "1" | "2" | "3" | "4" | "6";
+type SectionGridView = "2" | "3" | "4";
+
+export type GallerySection = {
+  id: string;
+  title: React.ReactNode;
+  description?: string;
+  items: GalleryItem[];
+  defaultView?: SectionGridView;
+};
+
 function isVideoSrc(src: string): boolean {
   return /\.(mp4|webm|mov)(\?|$)/i.test(src);
 }
@@ -84,7 +96,43 @@ const SECTION_1_DESCRIPTION =
 const SECTION_2_DESCRIPTION =
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident.";
 
-type GridView = "2" | "3" | "4";
+const DEFAULT_SECTIONS: GallerySection[] = [
+  {
+    id: "gallery-3d",
+    title: <span className="text-[16px] font-bold text-black">3D</span>,
+    description: SECTION_1_DESCRIPTION,
+    items: SECTION_1_VIDEOS,
+    defaultView: "3",
+  },
+  {
+    id: "gallery-qbicle",
+    title: (
+      <span className="text-[16px] font-bold text-black">
+        Qbicle Brand Identity and UI/UX
+      </span>
+    ),
+    description: SECTION_2_DESCRIPTION,
+    items: SECTION_2_QBICLE_IMAGES,
+    defaultView: "3",
+  },
+];
+
+function getGridClass(view: GridView) {
+  switch (view) {
+    case "1":
+      return "grid grid-cols-1 gap-6";
+    case "2":
+      return "grid grid-cols-2 gap-6";
+    case "3":
+      return "grid grid-cols-3 gap-6";
+    case "4":
+      return "grid grid-cols-4 gap-6";
+    case "6":
+      return "grid grid-cols-6 gap-6";
+    default:
+      return "grid grid-cols-3 gap-6";
+  }
+}
 
 function usePrefersReducedMotion(): boolean {
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -190,160 +238,270 @@ function ProjectBlock({
   );
 }
 
-export default function PortfolioGallery() {
-  const [view, setView] = useState<GridView>("3");
-  const [expanded1, setExpanded1] = useState(false);
-  const [expanded2, setExpanded2] = useState(false);
-  const reducedMotion = usePrefersReducedMotion();
+function getDefaultSectionView(section: GallerySection): SectionGridView {
+  return section.defaultView ?? "3";
+}
 
-  const gridClass =
-    view === "2"
-      ? "grid grid-cols-2 gap-6"
-      : view === "3"
-        ? "grid grid-cols-3 gap-6"
-        : "grid grid-cols-4 gap-6";
+function getViewIcon(view: GridView) {
+  switch (view) {
+    case "1":
+      return (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="currentColor"
+          aria-hidden
+        >
+          <rect x="1" y="1" width="12" height="12" rx="0.5" />
+        </svg>
+      );
+    case "2":
+      return (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="currentColor"
+          aria-hidden
+        >
+          <rect x="1" y="1" width="5" height="12" rx="0.5" />
+          <rect x="8" y="1" width="5" height="12" rx="0.5" />
+        </svg>
+      );
+    case "3":
+      return (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="currentColor"
+          aria-hidden
+        >
+          <rect x="1" y="1" width="3" height="12" rx="0.5" />
+          <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
+          <rect x="10" y="1" width="3" height="12" rx="0.5" />
+        </svg>
+      );
+    case "4":
+      return (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="currentColor"
+          aria-hidden
+        >
+          <rect x="1" y="1" width="5" height="5" rx="0.5" />
+          <rect x="8" y="1" width="5" height="5" rx="0.5" />
+          <rect x="1" y="8" width="5" height="5" rx="0.5" />
+          <rect x="8" y="8" width="5" height="5" rx="0.5" />
+        </svg>
+      );
+    case "6":
+      return (
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 14 14"
+          fill="currentColor"
+          aria-hidden
+        >
+          <rect x="1" y="1" width="3" height="5" rx="0.5" />
+          <rect x="5.5" y="1" width="3" height="5" rx="0.5" />
+          <rect x="10" y="1" width="3" height="5" rx="0.5" />
+          <rect x="1" y="8" width="3" height="5" rx="0.5" />
+          <rect x="5.5" y="8" width="3" height="5" rx="0.5" />
+          <rect x="10" y="8" width="3" height="5" rx="0.5" />
+        </svg>
+      );
+    default:
+      return null;
+  }
+}
+
+function ViewToggleButton({
+  label,
+  value,
+  activeValue,
+  onClick,
+  className = "flex h-8 w-8 items-center justify-center rounded transition-colors",
+}: {
+  label: string;
+  value: GridView;
+  activeValue: GridView;
+  onClick: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      onClick={onClick}
+      className={`${className} ${
+        activeValue === value
+          ? "bg-black text-white"
+          : "bg-gray-200 text-black hover:bg-gray-300"
+      }`}
+    >
+      {getViewIcon(value)}
+    </button>
+  );
+}
+
+export default function PortfolioGallery({
+  mode = "sections",
+  sections = [],
+  items = [],
+}: {
+  mode?: GalleryMode;
+  sections?: GallerySection[];
+  items?: GalleryItem[];
+}) {
+  const resolvedSections =
+    sections.length > 0 ? sections : mode === "sections" ? DEFAULT_SECTIONS : [];
+  const [sectionViews, setSectionViews] = useState<Record<string, GridView>>(() =>
+    resolvedSections.reduce<Record<string, GridView>>((acc, section) => {
+      acc[section.id] = getDefaultSectionView(section);
+      return acc;
+    }, {}),
+  );
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>(
+    () =>
+      resolvedSections.reduce<Record<string, boolean>>((acc, section) => {
+        acc[section.id] = false;
+        return acc;
+      }, {}),
+  );
+  const [flatView, setFlatView] = useState<GridView>("1");
+  const reducedMotion = usePrefersReducedMotion();
 
   return (
     <section
       className="w-full bg-white"
       style={{ fontFamily: "var(--font-family-base)" }}
     >
-      {/* Section 1: 3D – title, expand, grid toggles, 3 videos */}
-      <div>
-        <ExpandableSection
-          id="gallery-3d"
-          title={<span className="text-[16px] font-bold text-black">3D</span>}
-          description={SECTION_1_DESCRIPTION}
-          expanded={expanded1}
-          onToggle={() => setExpanded1((prev) => !prev)}
-          titleTag="div"
-          containerClassName=""
-          headerClassName="bg-white"
-          titleClassName=""
-          descriptionPanelClassName="bg-white"
-          renderHeader={({ titleNode, toggleButton }) => (
+      {mode === "flat" ? (
+        <>
+          <div className="flex items-center justify-end gap-1 pb-4">
+            <ViewToggleButton
+              label="1 column grid"
+              value="1"
+              activeValue={flatView}
+              onClick={() => setFlatView("1")}
+            />
+            <ViewToggleButton
+              label="6 column grid"
+              value="6"
+              activeValue={flatView}
+              onClick={() => setFlatView("6")}
+            />
+          </div>
+          <div className={`${getGridClass(flatView)} grid-auto-rows-auto pt-2`}>
+            {items.map((item) => (
+              <ProjectBlock
+                key={item.id}
+                item={item}
+                reducedMotion={reducedMotion}
+              />
+            ))}
+          </div>
+        </>
+      ) : (
+        resolvedSections.map((section, index) => {
+          const sectionView =
+            sectionViews[section.id] === "2" ||
+            sectionViews[section.id] === "3" ||
+            sectionViews[section.id] === "4"
+              ? sectionViews[section.id]
+              : getDefaultSectionView(section);
+
+          return (
             <div
-              className="flex flex-wrap items-center justify-between gap-3 bg-white "
-              style={{ paddingBottom: "16px" }}
+              key={section.id}
+              className={index === 0 ? "" : "pt-8 sm:pt-10 lg:pt-12"}
+              style={index === 0 ? undefined : { paddingTop: "16px" }}
             >
-              <div className="flex items-center gap-2">
-                {titleNode}
-                {toggleButton}
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  aria-label="2 column grid"
-                  onClick={() => setView("2")}
-                  className={`flex h-8 w-8 items-center justify-center rounded transition-colors ${
-                    view === "2"
-                      ? "bg-black text-white"
-                      : "bg-gray-200 text-black hover:bg-gray-300"
-                  }`}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="currentColor"
-                    aria-hidden
+              <ExpandableSection
+                id={section.id}
+                title={section.title}
+                description={section.description ?? ""}
+                expanded={expandedSections[section.id] ?? false}
+                onToggle={() =>
+                  setExpandedSections((prev) => ({
+                    ...prev,
+                    [section.id]: !prev[section.id],
+                  }))
+                }
+                titleTag="div"
+                containerClassName=""
+                headerClassName={index === 0 ? "bg-white" : "bg-white pb-1"}
+                titleClassName=""
+                descriptionPanelClassName="bg-white"
+                renderHeader={({ titleNode, toggleButton }) => (
+                  <div
+                    className="flex flex-wrap items-center justify-between gap-3 bg-white"
+                    style={{ paddingBottom: "16px" }}
                   >
-                    <rect x="1" y="1" width="5" height="12" rx="0.5" />
-                    <rect x="8" y="1" width="5" height="12" rx="0.5" />
-                  </svg>
-                </button>
+                    <div className="flex items-center gap-2">
+                      {titleNode}
+                      {toggleButton}
+                    </div>
 
-                <button
-                  type="button"
-                  aria-label="3 column grid"
-                  onClick={() => setView("3")}
-                  className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                    view === "3"
-                      ? "bg-black text-white"
-                      : "bg-gray-200 text-black hover:bg-gray-300"
-                  }`}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="currentColor"
-                    aria-hidden
-                  >
-                    <rect x="1" y="1" width="3" height="12" rx="0.5" />
-                    <rect x="5.5" y="1" width="3" height="12" rx="0.5" />
-                    <rect x="10" y="1" width="3" height="12" rx="0.5" />
-                  </svg>
-                </button>
-
-                <button
-                  type="button"
-                  aria-label="4 column grid"
-                  onClick={() => setView("4")}
-                  className={`hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex ${
-                    view === "4"
-                      ? "bg-black text-white"
-                      : "bg-gray-200 text-black hover:bg-gray-300"
-                  }`}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 14 14"
-                    fill="currentColor"
-                    aria-hidden
-                  >
-                    <rect x="1" y="1" width="5" height="5" rx="0.5" />
-                    <rect x="8" y="1" width="5" height="5" rx="0.5" />
-                    <rect x="1" y="8" width="5" height="5" rx="0.5" />
-                    <rect x="8" y="8" width="5" height="5" rx="0.5" />
-                  </svg>
-                </button>
-              </div>
+                    <div className="flex items-center gap-1">
+                      <ViewToggleButton
+                        label="2 column grid"
+                        value="2"
+                        activeValue={sectionView}
+                        onClick={() =>
+                          setSectionViews((prev) => ({
+                            ...prev,
+                            [section.id]: "2",
+                          }))
+                        }
+                      />
+                      <ViewToggleButton
+                        label="3 column grid"
+                        value="3"
+                        activeValue={sectionView}
+                        onClick={() =>
+                          setSectionViews((prev) => ({
+                            ...prev,
+                            [section.id]: "3",
+                          }))
+                        }
+                        className="hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex"
+                      />
+                      <ViewToggleButton
+                        label="4 column grid"
+                        value="4"
+                        activeValue={sectionView}
+                        onClick={() =>
+                          setSectionViews((prev) => ({
+                            ...prev,
+                            [section.id]: "4",
+                          }))
+                        }
+                        className="hidden h-8 w-8 items-center justify-center rounded transition-colors lg:flex"
+                      />
+                    </div>
+                  </div>
+                )}
+              >
+                <div className={`${getGridClass(sectionView)} pt-2 grid-auto-rows-auto`}>
+                  {section.items.map((item) => (
+                    <ProjectBlock
+                      key={item.id}
+                      item={item}
+                      reducedMotion={reducedMotion}
+                    />
+                  ))}
+                </div>
+              </ExpandableSection>
             </div>
-          )}
-        >
-          <div className={`${gridClass} pt-2 grid-auto-rows-auto`}>
-            {SECTION_1_VIDEOS.map((item) => (
-              <ProjectBlock
-                key={item.id}
-                item={item}
-                reducedMotion={reducedMotion}
-              />
-            ))}
-          </div>
-        </ExpandableSection>
-      </div>
-
-      {/* Section 2: Qbicle Brand Identity and UI/UX – title + icon, description overlay, qbicle images */}
-      <div className="pt-8 sm:pt-10 lg:pt-12" style={{ paddingTop: "16px" }}>
-        <ExpandableSection
-          id="gallery-qbicle"
-          title={
-            <span className="text-[16px] font-bold text-black">
-              Qbicle Brand Identity and UI/UX
-            </span>
-          }
-          description={SECTION_2_DESCRIPTION}
-          expanded={expanded2}
-          onToggle={() => setExpanded2((prev) => !prev)}
-          titleTag="div"
-          headerClassName="bg-white pb-1"
-          titleClassName=""
-          descriptionPanelClassName="bg-white"
-        >
-          <div className={`${gridClass} grid-auto-rows-auto pt-2`}>
-            {SECTION_2_QBICLE_IMAGES.map((item) => (
-              <ProjectBlock
-                key={item.id}
-                item={item}
-                reducedMotion={reducedMotion}
-              />
-            ))}
-          </div>
-        </ExpandableSection>
-      </div>
+          );
+        })
+      )}
     </section>
   );
 }

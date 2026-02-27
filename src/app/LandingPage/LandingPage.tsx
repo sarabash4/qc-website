@@ -5,7 +5,10 @@ export default function LandingPage() {
   return (
     <main className="w-full">
       {/* Hero: mobile-first padding and spacing */}
-      <section className="px-4 pt-6 pb-10 sm:px-6 sm:pt-10 sm:pb-12 md:px-8 md:pt-12 md:pb-16 lg:px-12 lg:pt-16 lg:pb-20">
+      <section
+        className="pt-6 pb-10 sm:pt-10 sm:pb-12 md:pt-12 md:pb-16 lg:pt-16 lg:pb-20"
+        style={{ paddingLeft: "15px", paddingRight: "15px" }}
+      >
         <MainHeader
           title="Nolan Barret is a graphic and interactive designer that works at the intersection of design, technology and culture."
           mode="light"
